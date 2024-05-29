@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teachers</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input[type="text"], input[type="department"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        input[type="submit"], button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        input[type="submit"]:hover, button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Personal Information Management</h1>
+    <form id="infoForm">
+        <input type="text" id="name" placeholder="Name" required><br>
+        <input type="text" id="department" placeholder="Department" required><br>
+        <input type="submit" value="Add Information">
+    </form>
+    <table id="infoTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Department</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Personal information will be listed here dynamically -->
+        </tbody>
+    </table>
+
+    <script>
+        // Function to fetch and display personal information from MongoDB
+        function fetchInformation() {
+            fetch('http://localhost:3000/api/information')
+            .then(response => response.json())
+            .then(data => {
+                const infoTable = document.getElementById('infoTable').getElementsByTagName('tbody')[0];
+                infoTable.innerHTML = '';
+                data.forEach(info => {
+                    const row = infoTable.insertRow();
+                    row.innerHTML = `
+                        <td>${info.name}</td>
+                        <td>${info.department}</td>
+                        <td>
+                            <button onclick="editInformation('${info._id}', '${info.name}', '${info.department}')">Edit</button>
+                            <button class="btn-danger" onclick="deleteInformation('${info._id}')">Delete</button>
+                        </td>
+                    `;
+                });
+            });
+        }
+
+        // Function to add personal information to MongoDB
+        document.getElementById('infoForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const name = document.getElementById('name').value;
+            const department = document.getElementById('department').value;
+            fetch('http://localhost:3000/api/information', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, department })
+            })
+            .then(() => {
+                document.getElementById('name').value = '';
+                document.getElementById('department').value = '';
+                fetchInformation();
+            });
+        });
+
+        // Function to edit personal information in MongoDB
+        function editInformation(id, name, department) {
+            const newName = prompt('Enter new name:', name);
+            const newdepartment = prompt('Enter new department:', department);
+            if (newName !== null && newdepartment !== null) {
+                fetch(`http://localhost:3000/api/information/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name: newName, department: newdepartment })
+                })
+                .then(fetchInformation);
+            }
+        }
+
+        // Function to delete personal information from MongoDB
+        function deleteInformation(id) {
+            if (confirm('Are you sure you want to delete this information?')) {
+                fetch(`http://localhost:3000/api/information/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(fetchInformation);
+            }
+        }
+
+        // Fetch and display personal information when the page loads
+        fetchInformation();
+    </script>
+</body>
+</html>
